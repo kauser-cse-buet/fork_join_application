@@ -94,8 +94,8 @@ public class ForkBlur extends RecursiveAction {
 
     // Plumbing follows.
     public static void main(String[] args) throws Exception {
-        System.out.println("hello");
-        String srcName = args[0];
+//        String srcName = args[0];
+        String srcName = "..\\data\\image_1.jpg";
         File srcFile = new File(srcName);
         BufferedImage image = ImageIO.read(srcFile);
         System.out.println("Source image: " + srcName);
@@ -112,14 +112,20 @@ public class ForkBlur extends RecursiveAction {
     public static BufferedImage blur(BufferedImage srcImage) {
         int w = srcImage.getWidth();
         int h = srcImage.getHeight();
+        System.out.println("#Task1.1 Image width: " + w);
+        System.out.println("#Task1.2 Image height: " + h);
         int[] src = srcImage.getRGB(0, 0, w, h, null, 0, w);
+        System.out.println("#Task1.3 Number of pixels: " + src.length);
         int[] dst = new int[src.length];
         int processors = Runtime.getRuntime().availableProcessors();
+        System.out.println("#Task1.4 Threshold for splitting the computation: " + sThreshold);
+        System.out.println("#Task1.5 Number of available processors: " + processors);
         ForkBlur fb = new ForkBlur(src, 0, src.length, dst);
         ForkJoinPool pool = new ForkJoinPool();
         long startTime = System.currentTimeMillis();
         pool.invoke(fb);
         long endTime = System.currentTimeMillis();
+        System.out.println("#Task1.6 Computation time of blurring one image: " + (endTime - startTime)/1000.0 + "s");
         BufferedImage dstImage = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
         dstImage.setRGB(0, 0, w, h, dst, 0, w);
         return dstImage;
