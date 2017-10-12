@@ -29,13 +29,11 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-
 import java.io.File;
-import java.util.ArrayList;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
-import javax.imageio.ImageIO;
 
 /**
  * ForkBlur implements a simple horizontal image blur. It averages pixels in the
@@ -46,7 +44,7 @@ import javax.imageio.ImageIO;
  * This is not the recommended way to blur images; it is only intended to
  * illustrate the use of the Fork/Join framework.
  */
-public class ForkBlur extends RecursiveAction {
+public class ForkBlurBatch2 extends RecursiveAction {
 
     private int[] mSource;
     private int mStart;
@@ -54,7 +52,7 @@ public class ForkBlur extends RecursiveAction {
     private int[] mDestination;
     private int mBlurWidth = 15; // Processing window size, should be odd. todo: why this should be odd?
 
-    public ForkBlur(int[] src, int start, int length, int[] dst) {
+    public ForkBlurBatch2(int[] src, int start, int length, int[] dst) {
         mSource = src;
         mStart = start;
         mLength = length;
@@ -89,15 +87,13 @@ public class ForkBlur extends RecursiveAction {
             return;
         }
         int split = mLength / 2;
-        invokeAll(new ForkBlur(mSource, mStart, split, mDestination),
-                new ForkBlur(mSource, mStart + split, mLength - split, mDestination));
+        invokeAll(new ForkBlurBatch2(mSource, mStart, split, mDestination),
+                new ForkBlurBatch2(mSource, mStart + split, mLength - split, mDestination));
     }
 
     // Plumbing follows.
     public static void main(String[] args) throws Exception {
-        ArrayList<Integer> sThresholdList = new ArrayList<Integer>();
-        sThresholdList.add(sThreshold);
-
+        long startTime = System.currentTimeMillis();
         System.out.println("==============================================================");
         System.out.println("# Task 2.1: Hardware configuration.");
         String osName= System.getProperty("os.name");
@@ -109,28 +105,33 @@ public class ForkBlur extends RecursiveAction {
         System.out.println("==============================================================");
 
 //        String srcName = args[0];
-        String srcName = "..\\data\\images\\image_1.jpg";
+        File imageFilesDir = new File("..\\data\\images");
+        File[] listOfFiles = imageFilesDir.listFiles();
+//        String srcName = "..\\data\\images\\image_1.jpg";
         String dstDir = "..\\data\\blur-images";
-        File srcFile = new File(srcName);
-        BufferedImage image = ImageIO.read(srcFile);
-        System.out.println("Source image: " + srcName);
 
-        int imagePixelLength = image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth()).length;
-        imagePixelLength++;
-        sThresholdList.add(imagePixelLength);
+        for(File srcFile: listOfFiles){
+            String srcName = srcFile.getName();
+            BufferedImage image = ImageIO.read(srcFile);
+            System.out.println("Source image: " + srcName);
 
-        for (int i = 0; i < sThresholdList.size(); i++) {
-            sThreshold = sThresholdList.get(i);
             System.out.println("## Task 2.2: Blur image for threshold: " + sThreshold);
             BufferedImage blurredImage = blur(image);
             String dstName = srcName.replace(".jpg", "") ;
             String[] dstNameArr = dstName.split("\\\\");
-            dstName = dstNameArr[dstNameArr.length-1] + "-blur-thr-" + sThreshold + ".jpg";
+            dstName = dstNameArr[dstNameArr.length-1] + "-blur.jpg";
             String dstFilePath = dstDir + "\\" + dstName;
             File dstFile = new File(dstFilePath);
             ImageIO.write(blurredImage, "jpg", dstFile);
             System.out.println("Output image: " + dstName);
+
         }
+        long endTime = System.currentTimeMillis();
+        System.out.println("=======================================================");
+        System.out.println("# Performance:");
+        System.out.println("Blured: " + listOfFiles.length + " images.");
+        System.out.println("Time taken: " + ((endTime - startTime)/1000) + "s");
+        System.out.println("=======================================================");
     }
 
     public static BufferedImage blur(BufferedImage srcImage) {
@@ -144,7 +145,7 @@ public class ForkBlur extends RecursiveAction {
         int processors = Runtime.getRuntime().availableProcessors();
         System.out.println("#Task1.4 Threshold for splitting the computation: " + sThreshold);
         System.out.println("#Task1.5 Number of available processors: " + processors);
-        ForkBlur fb = new ForkBlur(src, 0, src.length, dst);
+        ForkBlurBatch2 fb = new ForkBlurBatch2(src, 0, src.length, dst);
         ForkJoinPool pool = new ForkJoinPool();
         long startTime = System.currentTimeMillis();
         pool.invoke(fb);
