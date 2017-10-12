@@ -32,6 +32,7 @@
 import java.awt.image.BufferedImage;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
 import javax.imageio.ImageIO;
@@ -51,7 +52,7 @@ public class ForkBlur extends RecursiveAction {
     private int mStart;
     private int mLength;
     private int[] mDestination;
-    private int mBlurWidth = 15; // Processing window size, should be odd.
+    private int mBlurWidth = 15; // Processing window size, should be odd. todo: why this should be odd?
 
     public ForkBlur(int[] src, int start, int length, int[] dst) {
         mSource = src;
@@ -94,19 +95,41 @@ public class ForkBlur extends RecursiveAction {
 
     // Plumbing follows.
     public static void main(String[] args) throws Exception {
+        ArrayList<Integer> sThresholdList = new ArrayList<Integer>();
+        sThresholdList.add(sThreshold);
+
+        System.out.println("==============================================================");
+        System.out.println("# Task 2.1: Hardware configuration.");
+        String osName= System.getProperty("os.name");
+        System.out.println("Operating system Name: "+ osName);
+        String osType= System.getProperty("os.arch");
+        System.out.println("Operating system type: "+ osType);
+        System.out.println("Processor: " + System.getenv("PROCESSOR_IDENTIFIER"));
+        System.out.println("Number of available processors: " + Runtime.getRuntime().availableProcessors());
+        System.out.println("==============================================================");
+
 //        String srcName = args[0];
         String srcName = "..\\data\\image_1.jpg";
         File srcFile = new File(srcName);
         BufferedImage image = ImageIO.read(srcFile);
         System.out.println("Source image: " + srcName);
-        BufferedImage blurredImage = blur(image);
-        String dstName = srcName.replace(".jpg", "") ;
-        dstName = srcName.replace(".JPG", "") ;
-        String[] dstNameArr = dstName.split("/");
-        dstName = dstNameArr[dstNameArr.length-1] + "-blur.jpg"; 	
-        File dstFile = new File(dstName);
-        ImageIO.write(blurredImage, "jpg", dstFile);
-        System.out.println("Output image: " + dstName);
+
+        int imagePixelLength = image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth()).length;
+        imagePixelLength++;
+        sThresholdList.add(imagePixelLength);
+
+        for (int i = 0; i < sThresholdList.size(); i++) {
+            sThreshold = sThresholdList.get(i);
+            System.out.println("## Task 2.2: Blur image for threshold: " + sThreshold);
+            BufferedImage blurredImage = blur(image);
+            String dstName = srcName.replace(".jpg", "") ;
+            dstName = srcName.replace(".JPG", "") ;
+            String[] dstNameArr = dstName.split("/");
+            dstName = dstNameArr[dstNameArr.length-1] + "-blur-thr-" + sThreshold + ".jpg";
+            File dstFile = new File(dstName);
+            ImageIO.write(blurredImage, "jpg", dstFile);
+            System.out.println("Output image: " + dstName);
+        }
     }
 
     public static BufferedImage blur(BufferedImage srcImage) {
