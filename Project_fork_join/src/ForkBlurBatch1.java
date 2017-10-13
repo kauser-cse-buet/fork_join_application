@@ -79,12 +79,24 @@ public class ForkBlurBatch1 extends RecursiveAction {
             mDestination[index] = dpixel;
         }
     }
+    protected void computeDirectly2() {
+        int sidePixels = (mBlurWidth - 1) / 2;
+        for (int i = mStart; i < mStart + mLength; i++) {
+            int pixelDiffSum = 0;
+            for(int j = mStart; j < mStart + mLength; j++){
+                if (i != j){
+                    pixelDiffSum += Math.abs(mSource[i] - mDestination[j]);
+                }
+            }
+            mDestination[i] = pixelDiffSum / (mLength - 1);
+        }
+    }
     protected static int sThreshold = 10000;
 
     @Override
     protected void compute() {
         if (mLength < sThreshold) {
-            computeDirectly();
+            computeDirectly2();
             return;
         }
         int split = mLength / 2;

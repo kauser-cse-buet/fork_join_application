@@ -78,6 +78,20 @@ public class ForkBlurBatch2 extends RecursiveAction {
             mDestination[index] = dpixel;
         }
     }
+
+    protected void computeDirectly2() {
+        int sidePixels = (mBlurWidth - 1) / 2;
+        for (int i = mStart; i < mStart + mLength; i++) {
+            int pixelDiffSum = 0;
+            for(int j = mStart; j < mStart + mLength; j++){
+                if (i != j){
+                    pixelDiffSum += Math.abs(mSource[i] - mDestination[j]);
+                }
+            }
+            mDestination[i] = pixelDiffSum / (mLength - 1);
+        }
+    }
+
     protected static int sThreshold = 10000;
 
     @Override
@@ -130,7 +144,7 @@ public class ForkBlurBatch2 extends RecursiveAction {
                 return;
             }
             ImageHolder imageHolder;
-            if((imageHolder = imageHolderQueue.poll()) != null){
+            if((imageHolder = imageHolderQueue.take()) != null){
 //                imageHolder = imageHolderQueue.take();
                 BufferedImage image = imageHolder.getImage();
                 String srcName = imageHolder.getFilename();
@@ -151,29 +165,6 @@ public class ForkBlurBatch2 extends RecursiveAction {
                 countFileBlurred ++;
             }
         }
-
-//        if(imageLoadingTask.isDone() && imageHolderQueue.isEmpty()){
-//            System.out.println("=========================Task completed. =============================");
-//
-//        }
-
-//        for(File srcFile: listOfFiles){
-//            String srcName = srcFile.getName();
-//            BufferedImage image = ImageIO.read(srcFile);
-//            System.out.println("Source image: " + srcName);
-//
-//            System.out.println("## Blur image for threshold: " + sThreshold);
-//            BufferedImage blurredImage = blur(image);
-//            String dstName = srcName.replace(".jpg", "") ;
-//            String[] dstNameArr = dstName.split("\\\\");
-//            dstName = dstNameArr[dstNameArr.length-1] + "-blur.jpg";
-//            String dstFilePath = dstDir + "\\" + dstName;
-//            File dstFile = new File(dstFilePath);
-//            ImageIO.write(blurredImage, "jpg", dstFile);
-//            System.out.println("Output image: " + dstName);
-//
-//        }
-
     }
 
     public static BufferedImage blur(BufferedImage srcImage) {
@@ -213,15 +204,14 @@ class ImageLoader implements Callable {
                 long endTime = System.currentTimeMillis();
                 long durationInSec = (endTime - startTime);
                 System.out.println("# Loaded file: " + srcName + ", time taken: " + durationInSec + "ms.");
-                imageHolderQueue.offer(new ImageHolder(image, srcName));
+                imageHolderQueue.put(new ImageHolder(image, srcName));
             }
             return null;
         }catch (IOException ioe){
             ioe.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-//        catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
         return null;
     }
 }
