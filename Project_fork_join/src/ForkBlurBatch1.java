@@ -138,8 +138,8 @@ public class ForkBlurBatch1 extends RecursiveAction {
     public static BufferedImage blur(BufferedImage srcImage) {
         int w = srcImage.getWidth();
         int h = srcImage.getHeight();
-        System.out.println("#Task1.1 Image width: " + w);
-        System.out.println("#Task1.2 Image height: " + h);
+        System.out.println("#Task1.1 ImageHolder width: " + w);
+        System.out.println("#Task1.2 ImageHolder height: " + h);
         int[] src = srcImage.getRGB(0, 0, w, h, null, 0, w);
         System.out.println("#Task1.3 Number of pixels: " + src.length);
         int[] dst = new int[src.length];

@@ -32,8 +32,8 @@
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RecursiveAction;
+import java.io.IOException;
+import java.util.concurrent.*;
 
 /**
  * ForkBlur implements a simple horizontal image blur. It averages pixels in the
@@ -110,22 +110,57 @@ public class ForkBlurBatch2 extends RecursiveAction {
 //        String srcName = "..\\data\\images\\image_1.jpg";
         String dstDir = "..\\data\\blur-images";
 
-        for(File srcFile: listOfFiles){
-            String srcName = srcFile.getName();
-            BufferedImage image = ImageIO.read(srcFile);
-            System.out.println("Source image: " + srcName);
+        LinkedBlockingQueue<ImageHolder> imageHolderQueue = new LinkedBlockingQueue<ImageHolder>();
+        ImageLoader imageLoader = new ImageLoader(imageHolderQueue, listOfFiles);
+        FutureTask<String> imageLoadingTask = new FutureTask<String>(imageLoader);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(imageLoadingTask);
 
-            System.out.println("## Task 2.2: Blur image for threshold: " + sThreshold);
-            BufferedImage blurredImage = blur(image);
-            String dstName = srcName.replace(".jpg", "") ;
-            String[] dstNameArr = dstName.split("\\\\");
-            dstName = dstNameArr[dstNameArr.length-1] + "-blur.jpg";
-            String dstFilePath = dstDir + "\\" + dstName;
-            File dstFile = new File(dstFilePath);
-            ImageIO.write(blurredImage, "jpg", dstFile);
-            System.out.println("Output image: " + dstName);
+        while(!imageLoadingTask.isDone() || !imageHolderQueue.isEmpty()){
+            if(!imageHolderQueue.isEmpty()){
+                ImageHolder imageHolder = imageHolderQueue.take();
+                BufferedImage image = imageHolder.getImage();
+
+                System.out.println("# popping queue: " + imageHolder.getFilename());
+                String srcName = imageHolder.getFilename();
+                System.out.println("Source image: " + srcName);
+
+                System.out.println("## Blur image for threshold: " + sThreshold);
+                BufferedImage blurredImage = blur(image);
+                String dstName = srcName.replace(".jpg", "") ;
+                String[] dstNameArr = dstName.split("\\\\");
+                dstName = dstNameArr[dstNameArr.length-1] + "-blur.jpg";
+                String dstFilePath = dstDir + "\\" + dstName;
+                File dstFile = new File(dstFilePath);
+                ImageIO.write(blurredImage, "jpg", dstFile);
+                System.out.println("Output image: " + dstName);
+            }
+        }
+
+        if(imageLoadingTask.isDone() && imageHolderQueue.isEmpty()){
+            System.out.println("=========================Task completed. =============================");
 
         }
+
+
+
+
+//        for(File srcFile: listOfFiles){
+//            String srcName = srcFile.getName();
+//            BufferedImage image = ImageIO.read(srcFile);
+//            System.out.println("Source image: " + srcName);
+//
+//            System.out.println("## Blur image for threshold: " + sThreshold);
+//            BufferedImage blurredImage = blur(image);
+//            String dstName = srcName.replace(".jpg", "") ;
+//            String[] dstNameArr = dstName.split("\\\\");
+//            dstName = dstNameArr[dstNameArr.length-1] + "-blur.jpg";
+//            String dstFilePath = dstDir + "\\" + dstName;
+//            File dstFile = new File(dstFilePath);
+//            ImageIO.write(blurredImage, "jpg", dstFile);
+//            System.out.println("Output image: " + dstName);
+//
+//        }
         long endTime = System.currentTimeMillis();
         System.out.println("=======================================================");
         System.out.println("# Performance:");
@@ -137,8 +172,8 @@ public class ForkBlurBatch2 extends RecursiveAction {
     public static BufferedImage blur(BufferedImage srcImage) {
         int w = srcImage.getWidth();
         int h = srcImage.getHeight();
-        System.out.println("#Task1.1 Image width: " + w);
-        System.out.println("#Task1.2 Image height: " + h);
+        System.out.println("#Task1.1 ImageHolder width: " + w);
+        System.out.println("#Task1.2 ImageHolder height: " + h);
         int[] src = srcImage.getRGB(0, 0, w, h, null, 0, w);
         System.out.println("#Task1.3 Number of pixels: " + src.length);
         int[] dst = new int[src.length];
@@ -154,6 +189,55 @@ public class ForkBlurBatch2 extends RecursiveAction {
         BufferedImage dstImage = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
         dstImage.setRGB(0, 0, w, h, dst, 0, w);
         return dstImage;
+    }
+}
+
+class ImageLoader implements Callable {
+    private LinkedBlockingQueue<ImageHolder> imageHolderQueue;
+    private File[] listOfFiles;
+
+    public ImageLoader(LinkedBlockingQueue<ImageHolder> imageHolderQueue, File[] listOfFiles) {
+        this.imageHolderQueue = imageHolderQueue;
+        this.listOfFiles = listOfFiles;
+    }
+
+    @Override
+    public String call() {
+        try {
+            for(File srcFile: listOfFiles){
+                String srcName = srcFile.getName();
+                System.out.println("# Started loading file: " + srcName);
+                BufferedImage image = ImageIO.read(srcFile);
+                System.out.println("# Finished loading file: " + srcName);
+                imageHolderQueue.put(new ImageHolder(image, srcName));
+                System.out.println("# Put image file into queue, file: " + srcName);
+
+            }
+            return null;
+        }catch (IOException ioe){
+            ioe.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+}
+
+class ImageHolder {
+    private final BufferedImage image;
+    private final String filename;
+
+    ImageHolder(BufferedImage image, String filename) {
+        this.image = image;
+        this.filename = filename;
+    }
+
+    public String getFilename() {
+        return filename;
+    }
+
+    public BufferedImage getImage() {
+        return image;
     }
 }
 
