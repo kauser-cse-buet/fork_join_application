@@ -96,7 +96,14 @@ public class ForkBlur extends RecursiveAction {
     // Plumbing follows.
     public static void main(String[] args) throws Exception {
         ArrayList<Integer> sThresholdList = new ArrayList<Integer>();
-        sThresholdList.add(sThreshold);
+        sThresholdList.add((int)Math.pow(10, 1));
+        sThresholdList.add((int)Math.pow(10, 2));
+        sThresholdList.add((int)Math.pow(10, 3));
+        sThresholdList.add((int)Math.pow(10, 4));
+        sThresholdList.add((int)Math.pow(10, 5));
+        sThresholdList.add((int)Math.pow(10, 6));
+        sThresholdList.add((int)Math.pow(10, 7));
+        sThresholdList.add((int)Math.pow(10, 8));
 
         System.out.println("==============================================================");
         System.out.println("# Task 2.1: Hardware configuration.");
@@ -115,9 +122,9 @@ public class ForkBlur extends RecursiveAction {
         BufferedImage image = ImageIO.read(srcFile);
         System.out.println("Source image: " + srcName);
 
-        int imagePixelLength = image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth()).length;
-        imagePixelLength++;
-        sThresholdList.add(imagePixelLength);
+//        int imagePixelLength = image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth()).length;
+//        imagePixelLength++;
+//        sThresholdList.add(imagePixelLength);
 
         for (int i = 0; i < sThresholdList.size(); i++) {
             sThreshold = sThresholdList.get(i);

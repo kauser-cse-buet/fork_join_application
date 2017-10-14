@@ -143,9 +143,9 @@ public class ForkBlurBatch2 extends RecursiveAction {
                 executor.shutdown();
                 return;
             }
-            ImageHolder imageHolder;
-            if((imageHolder = imageHolderQueue.take()) != null){
-//                imageHolder = imageHolderQueue.take();
+
+            if(!imageHolderQueue.isEmpty()){
+                ImageHolder imageHolder = imageHolderQueue.take();
                 BufferedImage image = imageHolder.getImage();
                 String srcName = imageHolder.getFilename();
                 System.out.println("=> take image: " + srcName);

@@ -96,7 +96,7 @@ public class ForkBlurBatch1 extends RecursiveAction {
     @Override
     protected void compute() {
         if (mLength < sThreshold) {
-            computeDirectly2();
+            computeDirectly();
             return;
         }
         int split = mLength / 2;
